@@ -1,0 +1,280 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie ROI Predictor</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px 16px;
+            font-family: Arial, sans-serif;
+            background: #f3f5f9;
+            color: #202938;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: auto;
+            padding: 30px;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 5px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #172554;
+        }
+
+        .intro {
+            color: #596579;
+            line-height: 1.6;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font: inherit;
+            background: white;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        .hint {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 24px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #1d4ed8;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1e40af;
+        }
+
+        .result {
+            margin-top: 24px;
+            padding: 20px;
+            border-radius: 9px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+        }
+
+        .result h2 {
+            margin-top: 0;
+        }
+
+        .error {
+            margin-top: 20px;
+            padding: 14px;
+            background: #fef2f2;
+            color: #b91c1c;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width {
+                grid-column: auto;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h1>Movie ROI Prediction System</h1>
+    <p class="intro">
+        Enter the movie's financial details, release information, genre,
+        and other metadata to generate a model prediction.
+    </p>
+
+    <form action="{{ url_for('predict') }}" method="POST">
+        <div class="form-grid">
+
+            <div class="field">
+                <label for="budget">Production Budget</label>
+                <input type="number" id="budget" name="budget"
+                       min="1" step="any" required>
+                <span class="hint">Enter the budget in the same currency units used during training.</span>
+            </div>
+
+            <div class="field">
+                <label for="runtime">Runtime (minutes)</label>
+                <input type="number" id="runtime" name="runtime"
+                       min="1" step="any" required>
+            </div>
+
+            <div class="field">
+                <label for="franchise">Part of a franchise?</label>
+                <select id="franchise" name="franchise" required>
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="release_year">Release Year</label>
+                <input type="number" id="release_year" name="release_year"
+                       min="1900" max="2100" required>
+            </div>
+
+            <div class="field">
+                <label for="release_month">Release Month</label>
+                <select id="release_month" name="release_month" required>
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="original_language">Original Language Code</label>
+                <input type="text" id="original_language"
+                       name="original_language" placeholder="e.g. en" required>
+                <span class="hint">Use a code such as en, fr, or hi.</span>
+            </div>
+
+            <div class="field">
+                <label for="release_season">Release Season</label>
+                <select id="release_season" name="release_season" required>
+                    <option value="Spring">Spring</option>
+                    <option value="Summer">Summer</option>
+                    <option value="Autumn">Autumn</option>
+                    <option value="Winter">Winter</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="director">Director</label>
+                <input type="text" id="director" name="director"
+                       value="Other" required>
+                <span class="hint">Use the cleaned director category from training where known; otherwise use Other.</span>
+            </div>
+
+            <div class="field full-width">
+                <label for="genres">Genres</label>
+                <input type="text" id="genres" name="genres"
+                       placeholder="e.g. Drama, Comedy" required>
+                <span class="hint">Separate multiple genres with commas.</span>
+            </div>
+
+            <div class="field full-width">
+                <label for="keywords">Keywords</label>
+                <input type="text" id="keywords" name="keywords"
+                       placeholder="e.g. friendship, family, adventure">
+                <span class="hint">Separate keywords with commas.</span>
+            </div>
+
+            <div class="field full-width">
+                <label for="companies">Production Companies</label>
+                <input type="text" id="companies" name="companies"
+                       placeholder="e.g. Warner Bros.">
+                <span class="hint">Separate company names with commas.</span>
+            </div>
+
+            <div class="field">
+                <label for="countries">Production Countries</label>
+                <input type="text" id="countries" name="countries"
+                       placeholder="e.g. United States of America">
+                <span class="hint">Separate country names with commas.</span>
+            </div>
+
+            <div class="field">
+                <label for="languages">Spoken Languages</label>
+                <input type="text" id="languages" name="languages"
+                       placeholder="e.g. English">
+                <span class="hint">Separate language names with commas.</span>
+            </div>
+
+            <div class="field full-width">
+                <label for="overview">Movie Overview</label>
+                <textarea id="overview" name="overview" rows="4"
+                          placeholder="Describe the movie's story..."></textarea>
+            </div>
+        </div>
+
+        <button type="submit">Predict ROI</button>
+    </form>
+
+    {% if prediction is defined %}
+    <div class="result">
+        <h2>Prediction Result</h2>
+        <p>Predicted ROI: <strong>{{ prediction_percentage }}%</strong></p>
+        <p class="hint">Raw model prediction: {{ prediction }}</p>
+        <p class="hint">
+            This result is an estimate generated by a machine learning
+    model based on historical data. It is not guaranteed to reflect actual
+    movie performance or financial returns. Actual results may vary.
+    Do not use this prediction as the sole basis for investment decisions.
+        </p>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="error">
+        <strong>Unable to generate prediction:</strong> {{ error }}
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>
